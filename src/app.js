@@ -43,6 +43,7 @@ let statsCursor = new Date();
 let pendingYakumanPlayer = null;
 let selectedYakumanNames = new Set();
 let matches = loadMatches();
+let balanceCursor = new Date();
 
 const $ = (id) => document.getElementById(id);
 
@@ -600,8 +601,67 @@ function renderTitles(){
   ];
   $('titleCollection').innerHTML=defs.map(([e,n,c,u])=>`<div class="title-card ${u?'':'locked'}"><span class="emoji">${u?e:'🔒'}</span><strong>${n}</strong><span>${u?'獲得済み':c}</span></div>`).join('');
 }
-function renderAll(){renderQuickRecord();renderDaySummary();renderMatchDay();renderYearSummary();renderRecent();renderCalendar();renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();renderLocalYakuman();renderDataStatus();}
-function switchView(viewId){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===viewId));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===viewId));if(viewId==='calendarView')renderCalendar();if(viewId==='statsView'){renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();}if(viewId==='settingsView')renderLocalYakuman();}
+function yen(value){
+  const n=Number(value||0); const sign=n>0?'+':n<0?'−':'';
+  return `${sign}¥${Math.abs(n).toLocaleString('ja-JP')}`;
+}
+function yenPlain(value){ return `¥${Math.round(Number(value||0)).toLocaleString('ja-JP')}`; }
+function median(values){
+  if(!values.length)return 0; const a=[...values].sort((x,y)=>x-y); const m=Math.floor(a.length/2);
+  return a.length%2?a[m]:(a[m-1]+a[m])/2;
+}
+function maxbetLocalDate(row){ return new Date(row.date); }
+function maxbetImportedLastDate(){
+  const rows=Array.isArray(window.MAXBET_DATA)?window.MAXBET_DATA:(typeof MAXBET_DATA!=='undefined'?MAXBET_DATA:[]);
+  if(!rows.length)return null; return new Date(Math.max(...rows.map(r=>new Date(r.date).getTime())));
+}
+function balanceRowsForMonth(year,month){
+  const imported=(typeof MAXBET_DATA!=='undefined'&&Array.isArray(MAXBET_DATA)?MAXBET_DATA:[]).filter(r=>{
+    const d=maxbetLocalDate(r); return d.getFullYear()===year && d.getMonth()===month;
+  }).map(r=>({date:maxbetLocalDate(r),revenue:Number(r.revenue||0),expense:Number(r.expense||0),net:Number(r.revenue||0)-Number(r.expense||0),source:'MAXBET'}));
+  const last=maxbetImportedLastDate();
+  const live=matches.filter(m=>{
+    if(Number(m.daichiBalance||0)===0)return false;
+    const d=new Date(`${m.date}T12:00:00`);
+    if(d.getFullYear()!==year||d.getMonth()!==month)return false;
+    return !last || d.getTime()>last.getTime();
+  }).map(m=>({date:new Date(`${m.date}T12:00:00`),revenue:null,expense:null,net:Number(m.daichiBalance||0),source:'麻雀記録'}));
+  return [...imported,...live].sort((a,b)=>a.date-b.date);
+}
+function renderMoneyStatList(elId,values){
+  const el=$(elId); if(!el)return;
+  const vals=values.filter(v=>Number.isFinite(v));
+  const total=vals.reduce((s,v)=>s+v,0);
+  const rows=[['合計',total],['最大',vals.length?Math.max(...vals):0],['最小',vals.length?Math.min(...vals):0],['平均',vals.length?total/vals.length:0],['中央値',median(vals)]];
+  el.innerHTML=rows.map(([label,val])=>`<div><span>${label}</span><strong>${yenPlain(val)}</strong></div>`).join('');
+}
+function renderBalanceSheet(){
+  if(!$('balanceMonthLabel'))return;
+  const y=balanceCursor.getFullYear(),m=balanceCursor.getMonth();
+  const rows=balanceRowsForMonth(y,m);
+  $('balanceMonthLabel').textContent=`${y}年 ${m+1}月`;
+  const net=rows.reduce((s,r)=>s+r.net,0);
+  $('balanceNet').className=`balance-net ${net>0?'positive':net<0?'negative':'zero'}`;
+  $('balanceNet').textContent=yen(net);
+  const imported=rows.filter(r=>r.source==='MAXBET'); const live=rows.filter(r=>r.source==='麻雀記録');
+  $('balanceSourceNote').textContent=live.length?`MAXBET ${imported.length}件 ＋ 麻雀記録 ${live.length}件`:`MAXBET ${imported.length}件`;
+  renderMoneyStatList('expenseStats',imported.map(r=>r.expense));
+  renderMoneyStatList('revenueStats',imported.map(r=>r.revenue));
+  const wins=rows.filter(r=>r.net>0).length, losses=rows.filter(r=>r.net<0).length, draws=rows.filter(r=>r.net===0).length, count=rows.length;
+  $('balanceOutcomeStats').innerHTML=`<div><span>勝ち</span><strong>${wins}回</strong></div><div><span>負け</span><strong>${losses}回</strong></div><div><span>引き分け</span><strong>${draws}回</strong></div><div><span>イベント数</span><strong>${count}件</strong></div>`;
+  const invested=imported.reduce((s,r)=>s+r.expense,0), returned=imported.reduce((s,r)=>s+r.revenue,0);
+  const winRate=count?wins/count*100:0, roi=invested?returned/invested*100:0;
+  const nets=rows.map(r=>r.net); const avg=count?net/count:0, med=median(nets);
+  $('balanceRateStats').innerHTML=`<div><span>勝率</span><strong>${winRate.toFixed(2)}%</strong></div><div><span>収支平均</span><strong class="${avg>=0?'money-pos':'money-neg'}">${yen(avg)}</strong></div><div><span>回収率</span><strong>${imported.length?roi.toFixed(2)+'%':'—'}</strong></div><div><span>収支中央値</span><strong class="${med>=0?'money-pos':'money-neg'}">${yen(med)}</strong></div>`;
+  $('balanceEventCount').textContent=`${count}件`;
+  $('balanceHistory').innerHTML=rows.length?rows.map(r=>{
+    const d=r.date; const ds=`${m+1}/${d.getDate()}`;
+    const detail=r.source==='MAXBET'?`投資 ${yenPlain(r.expense)} / 回収 ${yenPlain(r.revenue)}`:'大地の当日収支';
+    return `<div class="balance-history-row"><div><strong>${ds}</strong><span>${detail}</span></div><b class="${r.net>=0?'money-pos':'money-neg'}">${yen(r.net)}</b></div>`;
+  }).join(''):'<div class="balance-empty">この月の収支データはありません</div>';
+}
+function renderAll(){renderQuickRecord();renderDaySummary();renderMatchDay();renderYearSummary();renderRecent();renderCalendar();renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();renderLocalYakuman();renderDataStatus();renderBalanceSheet();}
+function switchView(viewId){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===viewId));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===viewId));if(viewId==='calendarView')renderCalendar();if(viewId==='statsView'){renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();}if(viewId==='balanceView')renderBalanceSheet();if(viewId==='settingsView')renderLocalYakuman();}
 function showToast(text){const toast=$('toast');toast.textContent=text;toast.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove('show'),1600);}
 
 $('prevDay').onclick=()=>{selectedDate.setDate(selectedDate.getDate()-1);selectedDate=startOfDay(selectedDate);renderAll();};
@@ -626,6 +686,9 @@ $('localYakumanForm').onsubmit=(e)=>{e.preventDefault();const name=$('localYakum
 $('exportBackupBtn').onclick=exportBackup;
 $('importBackupInput').onchange=(e)=>importBackup(e.target.files?.[0]);
 $('clearAllBtn').onclick=()=>{if(confirm('この端末で追加した日付別記録・追加ローカル役満・対局成績を削除しますか？\n2022〜2025の取り込み済み過去記録は残ります。\n\n必要なら先にバックアップを書き出してください。')){records=[];localYakuman=[];matches=[];saveRecords();saveLocalYakuman();saveMatches();renderAll();showToast('端末の新規データを削除しました');}};
+if($('balancePrev'))$('balancePrev').onclick=()=>{balanceCursor=new Date(balanceCursor.getFullYear(),balanceCursor.getMonth()-1,1);renderBalanceSheet();};
+if($('balanceNext'))$('balanceNext').onclick=()=>{balanceCursor=new Date(balanceCursor.getFullYear(),balanceCursor.getMonth()+1,1);renderBalanceSheet();};
+if($('balanceMonthLabel'))$('balanceMonthLabel').onclick=()=>{balanceCursor=new Date();renderBalanceSheet();};
 document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>switchView(btn.dataset.view)));
 $('celebration').onclick=()=>$('celebration').classList.remove('show');
 
