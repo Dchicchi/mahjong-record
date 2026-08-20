@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mahjong-record-v1.1.0';
+const CACHE_NAME = 'mahjong-record-v1.1.1';
 const APP_SHELL = [
   './',
   './index.html',
