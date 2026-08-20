@@ -360,8 +360,8 @@ function renderStats(){
   else{
     const label=period==='year'?`${statsCursor.getFullYear()}年`:`${statsCursor.getFullYear()}年${statsCursor.getMonth()+1}月`;
     $('statsControls').innerHTML=`<div class="date-row"><button id="statsPrev" class="icon-btn">‹</button><div class="date-button text-center">${label}</div><button id="statsNext" class="icon-btn">›</button></div>`;
-    $('statsPrev').onclick=()=>{period==='year'?statsCursor.setFullYear(statsCursor.getFullYear()-1):statsCursor.setMonth(statsCursor.getMonth()-1);renderStats();renderMatchStats();renderTrendCharts();renderMonthlyMvp();renderTitles();renderAwards();};
-    $('statsNext').onclick=()=>{period==='year'?statsCursor.setFullYear(statsCursor.getFullYear()+1):statsCursor.setMonth(statsCursor.getMonth()+1);renderStats();renderMatchStats();renderTrendCharts();renderMonthlyMvp();renderTitles();renderAwards();};
+    $('statsPrev').onclick=()=>{period==='year'?statsCursor.setFullYear(statsCursor.getFullYear()-1):statsCursor.setMonth(statsCursor.getMonth()-1);renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();};
+    $('statsNext').onclick=()=>{period==='year'?statsCursor.setFullYear(statsCursor.getFullYear()+1):statsCursor.setMonth(statsCursor.getMonth()+1);renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();};
   }
   const list=getStatsList(period);
   const live=liveTotalsFor(list), historical=legacyTotalsForPeriod(period), combined=mergeTotals(live,historical);
@@ -522,6 +522,42 @@ function renderTrendCharts(){
   $('balanceTrendLabel').textContent=`${running>=0?'+':''}${running.toLocaleString()}円`;
   $('winRateTrendLabel').textContent=rounds?`${(wins/rounds*100).toFixed(1)}%`:'-';
 }
+
+const SPECIAL_METRIC_LABELS={yakuman:'役満',ippatsu:'一発',chombo:'チョンボ'};
+function liveTotalsForExact(year,month=null){
+  const list=records.filter(r=>{const d=new Date(r.occurredAt);return d.getFullYear()===year&&(month==null||d.getMonth()+1===month);});
+  return liveTotalsFor(list);
+}
+function combinedTotalsExact(year,month=null){return mergeTotals(liveTotalsForExact(year,month),legacyTotalsFor(year,month));}
+function svgMultiLineChart(rows){
+  const w=680,h=230,pl=34,pr=14,pt=16,pb=34,keys=PLAYERS.map(p=>p.id); const vals=rows.flatMap(r=>keys.map(k=>Number(r[k]||0))); const max=Math.max(1,...vals);
+  const x=i=>rows.length<=1?(pl+w-pr)/2:pl+(w-pl-pr)*i/(rows.length-1); const y=v=>pt+(h-pt-pb)*(1-v/max);
+  const dash=['','7 5','2 5'];
+  const grid=[0,.5,1].map(f=>{const yy=pt+(h-pt-pb)*f;return `<line x1="${pl}" y1="${yy}" x2="${w-pr}" y2="${yy}" stroke="currentColor" opacity=".08"/>`;}).join('');
+  const lines=keys.map((k,ki)=>{const pts=rows.map((r,i)=>[x(i),y(Number(r[k]||0))]);const path=pts.map((p,i)=>`${i?'L':'M'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');return `<path d="${path}" fill="none" stroke="currentColor" stroke-width="${ki===2?4:3}" stroke-dasharray="${dash[ki]}" stroke-linecap="round" stroke-linejoin="round" opacity="${ki===2?1:.62}"/>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${ki===2?4:3}" fill="currentColor" opacity="${ki===2?1:.72}"/>`).join('')}`}).join('');
+  const labels=rows.map((r,i)=>`<text x="${x(i)}" y="${h-10}" text-anchor="middle" font-size="11" fill="currentColor" opacity=".55">${r.label}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" role="img">${grid}${lines}${labels}</svg>`;
+}
+function svgGroupedBars(rows){
+  const w=680,h=235,pl=34,pr=12,pt=16,pb=38,keys=PLAYERS.map(p=>p.id),vals=rows.flatMap(r=>keys.map(k=>Number(r[k]||0))),max=Math.max(1,...vals),groupW=(w-pl-pr)/Math.max(1,rows.length),barW=Math.max(5,Math.min(18,groupW/4.5));
+  const y=v=>pt+(h-pt-pb)*(1-v/max); let bars='',labels='';
+  rows.forEach((r,i)=>{const cx=pl+groupW*(i+.5);keys.forEach((k,ki)=>{const v=Number(r[k]||0),x=cx+(ki-1)*(barW+2)-barW/2,yy=y(v),hh=h-pb-yy;bars+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,hh).toFixed(1)}" rx="3" fill="currentColor" opacity="${[.36,.62,1][ki]}"/>`;});labels+=`<text x="${cx}" y="${h-12}" text-anchor="middle" font-size="11" fill="currentColor" opacity=".58">${r.label}</text>`;});
+  return `<svg viewBox="0 0 ${w} ${h}" role="img"><line x1="${pl}" y1="${h-pb}" x2="${w-pr}" y2="${h-pb}" stroke="currentColor" opacity=".12"/>${bars}${labels}</svg>`;
+}
+function svgPlayerBars(totals,key){
+  const rows=PLAYERS.map(p=>({name:p.name,value:Number(totals[p.id]?.[key]||0)})),w=680,h=190,pl=30,pr=18,pt=12,pb=42,max=Math.max(1,...rows.map(r=>r.value)),slot=(w-pl-pr)/3,barW=Math.min(92,slot*.5);
+  const bars=rows.map((r,i)=>{const x=pl+slot*(i+.5)-barW/2,hh=(h-pt-pb)*r.value/max,y=h-pb-hh;return `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(1,hh)}" rx="10" fill="currentColor" opacity="${[.45,.7,1][i]}"/><text x="${x+barW/2}" y="${Math.max(12,y-7)}" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor">${r.value}</text><text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="12" fill="currentColor" opacity=".7">${r.name}</text>`}).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" role="img">${bars}</svg>`;
+}
+function renderSpecialCharts(){
+  if(!$('specialMetric'))return; const metric=$('specialMetric').value||'yakuman',year=statsCursor.getFullYear();
+  const monthly=Array.from({length:12},(_,i)=>{const t=combinedTotalsExact(year,i+1);return {label:`${i+1}月`,...Object.fromEntries(PLAYERS.map(p=>[p.id,t[p.id][metric]||0]))};});
+  $('monthlySpecialChart').innerHTML=svgMultiLineChart(monthly); $('monthlySpecialTitle').textContent=`${year}年 月別${SPECIAL_METRIC_LABELS[metric]}推移`;
+  const nowY=new Date().getFullYear(),years=[];for(let y=2022;y<=Math.max(nowY,year);y++){const t=combinedTotalsExact(y);years.push({label:String(y),...Object.fromEntries(PLAYERS.map(p=>[p.id,t[p.id][metric]||0]))});}
+  $('yearlySpecialChart').innerHTML=svgGroupedBars(years);
+  const period=$('statsPeriod').value; const live=liveTotalsFor(getStatsList(period)),historical=legacyTotalsForPeriod(period),combined=mergeTotals(live,historical);
+  $('playerSpecialChart').innerHTML=svgPlayerBars(combined,metric); $('playerSpecialLabel').textContent=`${SPECIAL_METRIC_LABELS[metric]} / ${period==='all'?'通算':period==='year'?year+'年':year+'年'+(statsCursor.getMonth()+1)+'月'}`;
+}
 function currentMonthCombinedTotals(){
   const y=statsCursor.getFullYear(),m=statsCursor.getMonth()+1;
   const live=liveTotalsFor(records.filter(r=>{const d=new Date(r.occurredAt);return d.getFullYear()===y&&d.getMonth()+1===m;}));
@@ -544,8 +580,8 @@ function renderTitles(){
   ];
   $('titleCollection').innerHTML=defs.map(([e,n,c,u])=>`<div class="title-card ${u?'':'locked'}"><span class="emoji">${u?e:'🔒'}</span><strong>${n}</strong><span>${u?'獲得済み':c}</span></div>`).join('');
 }
-function renderAll(){renderQuickRecord();renderDaySummary();renderMatchDay();renderYearSummary();renderRecent();renderCalendar();renderStats();renderMatchStats();renderTrendCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();renderLocalYakuman();renderDataStatus();}
-function switchView(viewId){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===viewId));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===viewId));if(viewId==='calendarView')renderCalendar();if(viewId==='statsView'){renderStats();renderMatchStats();renderTrendCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();}if(viewId==='settingsView')renderLocalYakuman();}
+function renderAll(){renderQuickRecord();renderDaySummary();renderMatchDay();renderYearSummary();renderRecent();renderCalendar();renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();renderLocalYakuman();renderDataStatus();}
+function switchView(viewId){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===viewId));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===viewId));if(viewId==='calendarView')renderCalendar();if(viewId==='statsView'){renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();renderLegacyHistory();}if(viewId==='settingsView')renderLocalYakuman();}
 function showToast(text){const toast=$('toast');toast.textContent=text;toast.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove('show'),1600);}
 
 $('prevDay').onclick=()=>{selectedDate.setDate(selectedDate.getDate()-1);selectedDate=startOfDay(selectedDate);renderAll();};
@@ -555,8 +591,9 @@ $('selectedDateBtn').onclick=()=>{$('datePicker').value=toISODate(selectedDate);
 $('applyDateBtn').onclick=(e)=>{e.preventDefault();if($('datePicker').value){selectedDate=startOfDay(new Date(`${$('datePicker').value}T00:00:00`));calendarCursor=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);renderAll();$('calendarDialog').close();}};
 $('prevMonth').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar();};
 $('nextMonth').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar();};
-$('statsPeriod').onchange=()=>{renderStats();renderMatchStats();renderTrendCharts();renderMonthlyMvp();renderTitles();renderAwards();};
+$('statsPeriod').onchange=()=>{renderStats();renderMatchStats();renderTrendCharts();renderSpecialCharts();renderMonthlyMvp();renderTitles();renderAwards();};
 $('legacyYearSelect').onchange=renderLegacyHistory;
+if($('specialMetric'))$('specialMetric').onchange=renderSpecialCharts;
 $('editDayBtn').onclick=openDayEdit;
 $('closeDayEditDialog').onclick=()=>$('dayEditDialog').close();
 $('addFromDayEdit').onclick=()=>{$('dayEditDialog').close();showToast('下のカウンターから追加できます');};
