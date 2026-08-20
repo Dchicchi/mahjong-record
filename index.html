@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="麻雀記録" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+  <title>麻雀記録</title>
+  <meta name="description" content="大地専用の麻雀記録アプリ。役満・一発・チョンボ・順位・収支を日付ごとに記録。" />
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">MAHJONG RECORD <span class="version-chip">v1.0</span></p>
+        <h1>麻雀記録</h1>
+      </div>
+      <button id="todayBtn" class="ghost-btn">今日</button>
+    </header>
+
+    <main>
+      <section id="homeView" class="view active">
+        <div class="hero-card">
+          <p class="muted">選択中の日付</p>
+          <div class="date-row">
+            <button id="prevDay" class="icon-btn" aria-label="前の日">‹</button>
+            <button id="selectedDateBtn" class="date-button"></button>
+            <button id="nextDay" class="icon-btn" aria-label="次の日">›</button>
+          </div>
+          <p id="dayStatus" class="hint"></p>
+        </div>
+
+        <section class="section-block">
+          <div class="section-title-row">
+            <h2>この日の記録</h2>
+            <button id="editDayBtn" class="text-btn">まとめて編集</button>
+          </div>
+          <div id="daySummary" class="day-summary"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-title-row">
+            <h2>記録する</h2>
+            <span class="muted small">＋ / − でその場で修正</span>
+          </div>
+          <div id="quickRecordGrid" class="player-grid"></div>
+        </section>
+
+
+        <section class="section-block">
+          <div class="section-title-row"><div><h2>対局成績</h2><p class="hint left">半荘ごとの順位＋大地の当日収支</p></div><span class="pill">NEW</span></div>
+          <div id="matchDayPanel" class="match-panel"></div>
+        </section>
+        <section class="section-block">
+          <div class="section-title-row">
+            <h2>今年の成績</h2>
+            <span id="currentYearLabel" class="pill"></span>
+          </div>
+          <div id="yearSummary" class="summary-grid"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-title-row">
+            <h2>最近の記録</h2>
+          </div>
+          <div id="recentRecords" class="record-list"></div>
+        </section>
+      </section>
+
+      <section id="calendarView" class="view">
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <button id="prevMonth" class="icon-btn">‹</button>
+            <h2 id="calendarMonthLabel"></h2>
+            <button id="nextMonth" class="icon-btn">›</button>
+          </div>
+          <div class="weekday-row">
+            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+        </div>
+      </section>
+
+      <section id="statsView" class="view">
+        <div class="section-title-row stats-heading">
+          <div><p class="eyebrow">STATS</p><h2>成績</h2></div>
+          <select id="statsPeriod" class="select-input">
+            <option value="month">月間</option>
+            <option value="year" selected>年間</option>
+            <option value="all">通算</option>
+          </select>
+        </div>
+        <div id="statsControls" class="stats-controls"></div>
+        <div id="statsTable" class="stats-table"></div>
+        <p id="legacyStatsNote" class="hint left"></p>
+
+
+        <section class="section-block compact-section">
+          <div class="section-title-row"><div><h2>対局データ</h2><p class="hint left">順位・勝率・平均順位・大地の収支</p></div></div>
+          <div id="matchStats" class="match-stats"></div>
+        </section>
+        <section class="section-block compact-section">
+          <div class="section-title-row"><div><h2>推移グラフ</h2><p class="hint left">大地の収支と1着率の流れ</p></div><span class="pill">📈</span></div>
+          <div class="chart-stack">
+            <div class="chart-card"><div class="chart-title-row"><strong>累計収支</strong><span id="balanceTrendLabel" class="chart-value"></span></div><div id="balanceChart" class="mini-chart"></div></div>
+            <div class="chart-card"><div class="chart-title-row"><strong>1着率推移</strong><span id="winRateTrendLabel" class="chart-value"></span></div><div id="winRateChart" class="mini-chart"></div></div>
+          </div>
+        </section>
+        <section class="section-block compact-section">
+          <div class="section-title-row"><div><h2>月間MVP</h2><p class="hint left">役満・一発・順位をざっくり総合評価</p></div><span class="pill">🌟</span></div>
+          <div id="monthlyMvp" class="mvp-card"></div>
+        </section>
+        <section class="section-block compact-section">
+          <div class="section-title-row"><div><h2>称号</h2><p class="hint left">記録が増えるほど開放</p></div><span class="pill">🎖️</span></div>
+          <div id="titleCollection" class="title-grid"></div>
+        </section>
+        <section class="section-block compact-section">
+          <div class="section-title-row"><h2>殿堂入り</h2><span class="pill">🏆</span></div>
+          <div id="funAwards" class="award-grid"></div>
+        </section>
+        <section class="section-block compact-section">
+          <div class="section-title-row">
+            <div><h2>過去記録</h2><p class="hint left">2022〜2025のNumbers記録を元の粒度で保存</p></div>
+            <select id="legacyYearSelect" class="select-input">
+              <option value="2025" selected>2025年</option><option value="2024">2024年</option>
+              <option value="2023">2023年</option>
+              <option value="2022">2022年</option>
+            </select>
+          </div>
+          <div id="legacyHistory" class="legacy-history"></div>
+        </section>
+
+        <section class="section-block compact-section">
+          <div class="section-title-row"><h2>役満コレクション</h2><span class="pill">図鑑</span></div>
+          <div id="yakumanCollection" class="collection-grid"></div>
+        </section>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="section-title-row stats-heading">
+          <div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div>
+        </div>
+        <section class="section-block">
+          <div class="section-title-row"><h2>ローカル役満</h2><button id="addLocalYakumanBtn" class="primary-small">追加</button></div>
+          <p class="hint left">仲間内ルールの役満を自由に追加できます。</p>
+          <div id="localYakumanList" class="record-list"></div>
+        </section>
+        <section class="section-block">
+          <div class="section-title-row"><div><h2>ホーム画面に追加</h2><p class="hint left">GitHub Pagesで公開後は、ブラウザからアプリのように起動できます。</p></div><span class="pill">PWA</span></div>
+          <div class="install-card">
+            <div><strong>🀄 麻雀記録をアプリ化</strong><p class="hint left">iPhoneはSafariの共有ボタン →「ホーム画面に追加」。対応ブラウザでは下のボタンから追加できます。</p></div>
+            <button id="installAppBtn" class="primary-btn" hidden>この端末に追加</button>
+            <p id="installStatus" class="hint left"></p>
+          </div>
+        </section>
+        <section class="section-block">
+          <div class="section-title-row"><div><h2>バックアップ</h2><p class="hint left">この端末で追加したデータを1ファイルに保存・復元できます。</p></div><span class="pill">BACKUP</span></div>
+          <div class="data-status" id="dataStatus"></div>
+          <div class="backup-actions">
+            <button id="exportBackupBtn" class="primary-btn">バックアップを書き出す</button>
+            <label class="import-btn">バックアップから復元<input id="importBackupInput" type="file" accept="application/json,.json" hidden /></label>
+          </div>
+          <p class="hint left">機種変更前やブラウザのデータ削除前に書き出しておくのがおすすめです。復元すると、この端末の新規データはバックアップ内容で置き換わります。</p>
+        </section>
+        <section class="section-block">
+          <div class="section-title-row"><div><h2>このアプリについて</h2><p class="hint left">麻雀記録 v1.0</p></div><span class="pill">v1.0</span></div>
+          <div class="install-card">
+            <div><strong>🀄 麻雀記録</strong><p class="hint left">役満・一発・チョンボ、半荘順位、大地の収支を日付単位で管理する専用記録アプリです。新規データはこの端末のブラウザに保存されます。</p></div>
+          </div>
+        </section>
+        <section class="section-block danger-zone">
+          <h2>データ削除</h2>
+          <p class="hint left">新しい日付別記録・追加ローカル役満・対局成績をこの端末から削除します。2022〜2025の取り込み済み過去記録はアプリ本体に残ります。</p>
+          <button id="clearAllBtn" class="danger-btn">端末の新規データを削除</button>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="メインナビゲーション">
+      <button class="nav-btn active" data-view="homeView">ホーム</button>
+      <button class="nav-btn" data-view="calendarView">カレンダー</button>
+      <button class="nav-btn" data-view="statsView">成績</button>
+      <button class="nav-btn" data-view="settingsView">設定</button>
+    </nav>
+  </div>
+
+  <dialog id="calendarDialog" class="date-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><h3>日付を選択</h3><button value="cancel" class="icon-btn">×</button></div>
+      <input id="datePicker" type="date" class="date-input" />
+      <button id="applyDateBtn" value="default" class="primary-btn">この日を選ぶ</button>
+    </form>
+  </dialog>
+
+  <dialog id="yakumanDialog" class="date-dialog">
+    <div class="dialog-body">
+      <div class="dialog-head"><div><p class="eyebrow">YAKUMAN</p><h3 id="yakumanDialogTitle">役満を選択</h3></div><button id="closeYakumanDialog" class="icon-btn">×</button></div>
+      <div id="yakumanOptions" class="yakuman-options"></div>
+      <div id="yakumanSelectionSummary" class="yakuman-selection-summary"></div>
+      <button id="saveYakumanBtn" class="primary-btn" disabled>この役満を1回として記録</button>
+      <button id="openLocalFromYakuman" class="ghost-wide">＋ ローカル役満を追加</button>
+    </div>
+  </dialog>
+
+  <dialog id="dayEditDialog" class="wide-dialog">
+    <div class="dialog-body">
+      <div class="dialog-head"><div><p class="eyebrow">DAY EDIT</p><h3 id="dayEditTitle"></h3></div><button id="closeDayEditDialog" class="icon-btn">×</button></div>
+      <div id="dayEditList" class="record-list"></div>
+      <button id="addFromDayEdit" class="primary-btn">この日に記録を追加</button>
+    </div>
+  </dialog>
+
+  <dialog id="localYakumanDialog" class="date-dialog">
+    <form id="localYakumanForm">
+      <div class="dialog-head"><h3 id="localYakumanDialogTitle">ローカル役満を追加</h3><button type="button" id="closeLocalYakumanDialog" class="icon-btn">×</button></div>
+      <label class="field-label">役満名<input id="localYakumanName" class="date-input" maxlength="30" placeholder="例：紅孔雀" required /></label>
+      <label class="field-label">区分<select id="localYakumanTier" class="date-input"><option value="single">シングル役満</option><option value="double">ダブル役満</option></select></label>
+      <input id="editingLocalYakumanId" type="hidden" />
+      <button type="submit" class="primary-btn">保存</button>
+    </form>
+  </dialog>
+
+  <div id="celebration" class="celebration" aria-hidden="true"><div class="celebration-card"><div class="spark">🀄</div><div id="celebrationTitle" class="celebration-title"></div><div id="celebrationNames" class="celebration-names"></div><div id="celebrationSub" class="celebration-sub"></div></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="./src/legacy-data.js"></script>
+  <script src="./src/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
