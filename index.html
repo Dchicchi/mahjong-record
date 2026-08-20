@@ -17,7 +17,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">MAHJONG RECORD <span class="version-chip">v1.0</span></p>
+        <p class="eyebrow">MAHJONG RECORD <span class="version-chip">v1.1</span></p>
         <h1>麻雀記録</h1>
       </div>
       <button id="todayBtn" class="ghost-btn">今日</button>
@@ -112,6 +112,23 @@
           </div>
         </section>
         <section class="section-block compact-section">
+          <div class="section-title-row"><div><h2>特殊記録グラフ</h2><p class="hint left">役満・一発・チョンボを月別・年別・3人で比較</p></div><span class="pill">🀄📊</span></div>
+          <div class="special-chart-toolbar">
+            <label>表示する記録
+              <select id="specialMetric" class="select-input">
+                <option value="yakuman">役満</option>
+                <option value="ippatsu">一発</option>
+                <option value="chombo">チョンボ</option>
+              </select>
+            </label>
+          </div>
+          <div class="chart-stack special-chart-stack">
+            <div class="chart-card"><div class="chart-title-row"><strong id="monthlySpecialTitle">月別推移</strong><span class="chart-legend">拓・あんちゃん・大地</span></div><div id="monthlySpecialChart" class="mini-chart special-chart"></div></div>
+            <div class="chart-card"><div class="chart-title-row"><strong>年別比較</strong><span class="chart-legend">2022〜現在</span></div><div id="yearlySpecialChart" class="mini-chart special-chart"></div></div>
+            <div class="chart-card"><div class="chart-title-row"><strong>3人比較</strong><span id="playerSpecialLabel" class="chart-value"></span></div><div id="playerSpecialChart" class="mini-chart special-chart"></div></div>
+          </div>
+        </section>
+        <section class="section-block compact-section">
           <div class="section-title-row"><div><h2>月間MVP</h2><p class="hint left">役満・一発・順位をざっくり総合評価</p></div><span class="pill">🌟</span></div>
           <div id="monthlyMvp" class="mvp-card"></div>
         </section>
@@ -168,7 +185,7 @@
           <p class="hint left">機種変更前やブラウザのデータ削除前に書き出しておくのがおすすめです。復元すると、この端末の新規データはバックアップ内容で置き換わります。</p>
         </section>
         <section class="section-block">
-          <div class="section-title-row"><div><h2>このアプリについて</h2><p class="hint left">麻雀記録 v1.0</p></div><span class="pill">v1.0</span></div>
+          <div class="section-title-row"><div><h2>このアプリについて</h2><p class="hint left">麻雀記録 v1.1</p></div><span class="pill">v1.1</span></div>
           <div class="install-card">
             <div><strong>🀄 麻雀記録</strong><p class="hint left">役満・一発・チョンボ、半荘順位、大地の収支を日付単位で管理する専用記録アプリです。新規データはこの端末のブラウザに保存されます。</p></div>
           </div>
