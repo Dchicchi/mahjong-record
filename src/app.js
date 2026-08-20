@@ -529,28 +529,48 @@ function liveTotalsForExact(year,month=null){
   return liveTotalsFor(list);
 }
 function combinedTotalsExact(year,month=null){return mergeTotals(liveTotalsForExact(year,month),legacyTotalsFor(year,month));}
+function specialPlayerLegend(){
+  return `<span class="legend-item"><i class="legend-line legend-taku"></i>拓</span><span class="legend-item"><i class="legend-line legend-anchan"></i>あんちゃん</span><span class="legend-item"><i class="legend-line legend-daichi"></i>大地</span>`;
+}
 function svgMultiLineChart(rows){
-  const w=680,h=230,pl=34,pr=14,pt=16,pb=34,keys=PLAYERS.map(p=>p.id); const vals=rows.flatMap(r=>keys.map(k=>Number(r[k]||0))); const max=Math.max(1,...vals);
+  const w=680,h=255,pl=38,pr=18,pt=24,pb=38,keys=PLAYERS.map(p=>p.id); const vals=rows.flatMap(r=>keys.map(k=>Number(r[k]||0))); const max=Math.max(1,...vals);
   const x=i=>rows.length<=1?(pl+w-pr)/2:pl+(w-pl-pr)*i/(rows.length-1); const y=v=>pt+(h-pt-pb)*(1-v/max);
-  const dash=['','7 5','2 5'];
-  const grid=[0,.5,1].map(f=>{const yy=pt+(h-pt-pb)*f;return `<line x1="${pl}" y1="${yy}" x2="${w-pr}" y2="${yy}" stroke="currentColor" opacity=".08"/>`;}).join('');
-  const lines=keys.map((k,ki)=>{const pts=rows.map((r,i)=>[x(i),y(Number(r[k]||0))]);const path=pts.map((p,i)=>`${i?'L':'M'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');return `<path d="${path}" fill="none" stroke="currentColor" stroke-width="${ki===2?4:3}" stroke-dasharray="${dash[ki]}" stroke-linecap="round" stroke-linejoin="round" opacity="${ki===2?1:.62}"/>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${ki===2?4:3}" fill="currentColor" opacity="${ki===2?1:.72}"/>`).join('')}`}).join('');
+  const dash=['8 5','2 5',''];
+  const gridVals=[max,Math.round(max/2),0].filter((v,i,a)=>a.indexOf(v)===i);
+  const grid=gridVals.map(v=>{const yy=y(v);return `<line x1="${pl}" y1="${yy}" x2="${w-pr}" y2="${yy}" stroke="currentColor" opacity=".08"/><text x="${pl-6}" y="${yy+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".42">${v}</text>`;}).join('');
+  const lines=keys.map((k,ki)=>{
+    const pts=rows.map((r,i)=>[x(i),y(Number(r[k]||0)),Number(r[k]||0)]);
+    const path=pts.map((p,i)=>`${i?'L':'M'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+    const valueOffset=[-9,14,-9][ki];
+    const valueLabels=pts.map(p=>p[2]===0?'':`<text x="${p[0]}" y="${Math.max(11,p[1]+valueOffset)}" text-anchor="middle" font-size="10" font-weight="800" fill="currentColor" opacity="${ki===2?'.95':'.68'}">${p[2]}</text>`).join('');
+    return `<path d="${path}" fill="none" stroke="currentColor" stroke-width="${ki===2?4:3}" stroke-dasharray="${dash[ki]}" stroke-linecap="round" stroke-linejoin="round" opacity="${ki===2?1:.62}"/>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${ki===2?4:3}" fill="currentColor" opacity="${ki===2?1:.72}"/>`).join('')}${valueLabels}`;
+  }).join('');
   const labels=rows.map((r,i)=>`<text x="${x(i)}" y="${h-10}" text-anchor="middle" font-size="11" fill="currentColor" opacity=".55">${r.label}</text>`).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" role="img">${grid}${lines}${labels}</svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="月別推移。各点の数字は回数です。">${grid}${lines}${labels}</svg>`;
 }
 function svgGroupedBars(rows){
-  const w=680,h=235,pl=34,pr=12,pt=16,pb=38,keys=PLAYERS.map(p=>p.id),vals=rows.flatMap(r=>keys.map(k=>Number(r[k]||0))),max=Math.max(1,...vals),groupW=(w-pl-pr)/Math.max(1,rows.length),barW=Math.max(5,Math.min(18,groupW/4.5));
+  const w=680,h=255,pl=38,pr=14,pt=24,pb=40,keys=PLAYERS.map(p=>p.id),vals=rows.flatMap(r=>keys.map(k=>Number(r[k]||0))),max=Math.max(1,...vals),groupW=(w-pl-pr)/Math.max(1,rows.length),barW=Math.max(5,Math.min(18,groupW/4.5));
   const y=v=>pt+(h-pt-pb)*(1-v/max); let bars='',labels='';
-  rows.forEach((r,i)=>{const cx=pl+groupW*(i+.5);keys.forEach((k,ki)=>{const v=Number(r[k]||0),x=cx+(ki-1)*(barW+2)-barW/2,yy=y(v),hh=h-pb-yy;bars+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,hh).toFixed(1)}" rx="3" fill="currentColor" opacity="${[.36,.62,1][ki]}"/>`;});labels+=`<text x="${cx}" y="${h-12}" text-anchor="middle" font-size="11" fill="currentColor" opacity=".58">${r.label}</text>`;});
-  return `<svg viewBox="0 0 ${w} ${h}" role="img"><line x1="${pl}" y1="${h-pb}" x2="${w-pr}" y2="${h-pb}" stroke="currentColor" opacity=".12"/>${bars}${labels}</svg>`;
+  const gridVals=[max,Math.round(max/2),0].filter((v,i,a)=>a.indexOf(v)===i);
+  const grid=gridVals.map(v=>{const yy=y(v);return `<line x1="${pl}" y1="${yy}" x2="${w-pr}" y2="${yy}" stroke="currentColor" opacity=".08"/><text x="${pl-6}" y="${yy+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".42">${v}</text>`;}).join('');
+  rows.forEach((r,i)=>{
+    const cx=pl+groupW*(i+.5);
+    keys.forEach((k,ki)=>{
+      const v=Number(r[k]||0),x=cx+(ki-1)*(barW+2)-barW/2,yy=y(v),hh=h-pb-yy;
+      bars+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,hh).toFixed(1)}" rx="3" fill="currentColor" opacity="${[.36,.62,1][ki]}"/><text x="${(x+barW/2).toFixed(1)}" y="${Math.max(12,yy-5).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="800" fill="currentColor" opacity="${ki===2?'.95':'.7'}">${v}</text>`;
+    });
+    labels+=`<text x="${cx}" y="${h-12}" text-anchor="middle" font-size="11" fill="currentColor" opacity=".58">${r.label}</text>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="年別比較。各棒の上の数字は回数です。">${grid}${bars}${labels}</svg>`;
 }
 function svgPlayerBars(totals,key){
-  const rows=PLAYERS.map(p=>({name:p.name,value:Number(totals[p.id]?.[key]||0)})),w=680,h=190,pl=30,pr=18,pt=12,pb=42,max=Math.max(1,...rows.map(r=>r.value)),slot=(w-pl-pr)/3,barW=Math.min(92,slot*.5);
-  const bars=rows.map((r,i)=>{const x=pl+slot*(i+.5)-barW/2,hh=(h-pt-pb)*r.value/max,y=h-pb-hh;return `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(1,hh)}" rx="10" fill="currentColor" opacity="${[.45,.7,1][i]}"/><text x="${x+barW/2}" y="${Math.max(12,y-7)}" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor">${r.value}</text><text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="12" fill="currentColor" opacity=".7">${r.name}</text>`}).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" role="img">${bars}</svg>`;
+  const rows=PLAYERS.map(p=>({name:p.name,value:Number(totals[p.id]?.[key]||0)})),w=680,h=200,pl=30,pr=18,pt=20,pb=42,max=Math.max(1,...rows.map(r=>r.value)),slot=(w-pl-pr)/3,barW=Math.min(92,slot*.5);
+  const bars=rows.map((r,i)=>{const x=pl+slot*(i+.5)-barW/2,hh=(h-pt-pb)*r.value/max,y=h-pb-hh;return `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(1,hh)}" rx="10" fill="currentColor" opacity="${[.45,.7,1][i]}"/><text x="${x+barW/2}" y="${Math.max(14,y-7)}" text-anchor="middle" font-size="15" font-weight="900" fill="currentColor">${r.value}</text><text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="12" fill="currentColor" opacity=".7">${r.name}</text>`}).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="3人比較。棒の上に回数を表示しています。">${bars}</svg>`;
 }
 function renderSpecialCharts(){
   if(!$('specialMetric'))return; const metric=$('specialMetric').value||'yakuman',year=statsCursor.getFullYear();
+  const legend=specialPlayerLegend(); if($('monthlySpecialLegend'))$('monthlySpecialLegend').innerHTML=legend; if($('yearlySpecialLegend'))$('yearlySpecialLegend').innerHTML=legend;
   const monthly=Array.from({length:12},(_,i)=>{const t=combinedTotalsExact(year,i+1);return {label:`${i+1}月`,...Object.fromEntries(PLAYERS.map(p=>[p.id,t[p.id][metric]||0]))};});
   $('monthlySpecialChart').innerHTML=svgMultiLineChart(monthly); $('monthlySpecialTitle').textContent=`${year}年 月別${SPECIAL_METRIC_LABELS[metric]}推移`;
   const nowY=new Date().getFullYear(),years=[];for(let y=2022;y<=Math.max(nowY,year);y++){const t=combinedTotalsExact(y);years.push({label:String(y),...Object.fromEntries(PLAYERS.map(p=>[p.id,t[p.id][metric]||0]))});}

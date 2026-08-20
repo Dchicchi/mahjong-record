@@ -24,3 +24,6 @@
 
 /* v1.1 special record charts */
 .special-chart-toolbar{margin:12px 0}.special-chart-toolbar label{display:grid;gap:6px;font-size:12px;font-weight:800;color:var(--muted)}.special-chart-toolbar .select-input{width:100%;color:#111827}.special-chart-stack{margin-top:8px}.special-chart{min-height:180px}.chart-legend{font-size:10px;color:var(--muted);font-weight:700}.special-chart svg{min-width:520px}.special-chart{overflow-x:auto;-webkit-overflow-scrolling:touch}.special-chart::-webkit-scrollbar{height:4px}.special-chart::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:99px}@media(max-width:480px){.special-chart{min-height:165px}.special-chart svg{width:620px;max-width:none}}
+
+/* v1.1.1 chart legends and value labels */
+.player-legend{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:2px 0 8px}.legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.legend-line{display:inline-block;width:26px;height:0;border-top:3px solid currentColor;border-radius:99px}.legend-taku{border-top-style:dashed;opacity:.55}.legend-anchan{border-top-style:dotted;opacity:.75}.legend-daichi{border-top-style:solid;opacity:1}.special-chart text{font-family:inherit}.chart-card .player-legend+.special-chart{margin-top:2px}
