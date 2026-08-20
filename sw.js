@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mahjong-record-v1.1.1';
+const CACHE_NAME = 'mahjong-record-v1.2.0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const APP_SHELL = [
   './src/styles.css',
   './src/app.js',
   './src/legacy-data.js',
+  './src/maxbet-data.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png'

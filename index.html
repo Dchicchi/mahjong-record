@@ -17,7 +17,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">MAHJONG RECORD <span class="version-chip">v1.1</span></p>
+        <p class="eyebrow">MAHJONG RECORD <span class="version-chip">v1.2</span></p>
         <h1>麻雀記録</h1>
       </div>
       <button id="todayBtn" class="ghost-btn">今日</button>
@@ -158,6 +158,37 @@
         </section>
       </section>
 
+      <section id="balanceView" class="view">
+        <div class="balance-page-head">
+          <p class="eyebrow">BALANCE</p>
+          <h2>収支表</h2>
+          <p class="hint">MAXBETの過去データ＋これからの大地の収支</p>
+        </div>
+        <section class="balance-sheet">
+          <div class="balance-month-nav">
+            <button id="balancePrev" class="balance-arrow" aria-label="前の月">‹</button>
+            <button id="balanceMonthLabel" class="balance-month-label"></button>
+            <button id="balanceNext" class="balance-arrow" aria-label="次の月">›</button>
+          </div>
+          <div id="balanceNet" class="balance-net"></div>
+          <div id="balanceSourceNote" class="balance-source-note"></div>
+          <div class="money-columns">
+            <div class="money-column expense">
+              <div class="money-heading">↗ <span>投資</span></div>
+              <div id="expenseStats" class="money-stat-list"></div>
+            </div>
+            <div class="money-column revenue">
+              <div class="money-heading">↘ <span>回収</span></div>
+              <div id="revenueStats" class="money-stat-list"></div>
+            </div>
+          </div>
+          <div id="balanceOutcomeStats" class="balance-outcomes"></div>
+          <div id="balanceRateStats" class="balance-rates"></div>
+          <div class="balance-history-head"><strong>この月の履歴</strong><span id="balanceEventCount"></span></div>
+          <div id="balanceHistory" class="balance-history"></div>
+        </section>
+      </section>
+
       <section id="settingsView" class="view">
         <div class="section-title-row stats-heading">
           <div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div>
@@ -185,7 +216,7 @@
           <p class="hint left">機種変更前やブラウザのデータ削除前に書き出しておくのがおすすめです。復元すると、この端末の新規データはバックアップ内容で置き換わります。</p>
         </section>
         <section class="section-block">
-          <div class="section-title-row"><div><h2>このアプリについて</h2><p class="hint left">麻雀記録 v1.1.1</p></div><span class="pill">v1.1.1</span></div>
+          <div class="section-title-row"><div><h2>このアプリについて</h2><p class="hint left">麻雀記録 v1.2.0</p></div><span class="pill">v1.2.0</span></div>
           <div class="install-card">
             <div><strong>🀄 麻雀記録</strong><p class="hint left">役満・一発・チョンボ、半荘順位、大地の収支を日付単位で管理する専用記録アプリです。新規データはこの端末のブラウザに保存されます。</p></div>
           </div>
@@ -202,6 +233,7 @@
       <button class="nav-btn active" data-view="homeView">ホーム</button>
       <button class="nav-btn" data-view="calendarView">カレンダー</button>
       <button class="nav-btn" data-view="statsView">成績</button>
+      <button class="nav-btn" data-view="balanceView">収支</button>
       <button class="nav-btn" data-view="settingsView">設定</button>
     </nav>
   </div>
@@ -246,6 +278,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="./src/legacy-data.js"></script>
+  <script src="./src/maxbet-data.js"></script>
   <script src="./src/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
